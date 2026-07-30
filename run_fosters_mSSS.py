@@ -490,12 +490,12 @@ def _vsh_response_out(r, ex, ey, ez, D, weights, l, m):
     
     return Sout_element
 
-def _fosters_inverse_msss(S,N,phi_0):
+def _fosters_inverse(S,N,phi_0):
     """
     Parameters
     ----------
-    S : mne.raw structure
-        full raw meg file, ex. "fif", from recording with raw.info["bads"] indicated
+    S : matrix nchan x vectors
+        either SSS or mSSS
     N : 2D square matrix, (number of sensors) X (number of sensors)
         Sensor noise covariance matrix, calculated using empircial covariance
         implemented in mne.compute_raw_covariance
@@ -527,7 +527,7 @@ def _fosters_inverse_msss(S,N,phi_0):
     return data_fosters
 
 
-def apply_multi_sss(center1, center2, raw, do_fos, ch_types, Lin, Lout):
+def apply_preprocessing(center1, center2, raw, do_fos, do_msss, ch_types, Lin, Lout):
     """
     Calculate two-origin mSSS basis
     Modified from Matlab Xan McPherson, 2024
@@ -543,8 +543,10 @@ def apply_multi_sss(center1, center2, raw, do_fos, ch_types, Lin, Lout):
     raw: MNE.RAW data structure
         ensure BADS are marked and dropped
     do_fos: bool
-        TRUE will execute Fosters Inverse with mSSS and empirical N 
-        FALSE will execute mSSS freconstruction only
+    do_msss: bool
+        do_fos=TRUE and do_msss=TRUE will execute Fosters Inverse with mSSS and empirical N 
+        do_fos=FALSE and do_msss=TRUE will execute mSSS
+        do_fos=TRUE and do_msss=FALSE will execute Fosters Inverse with SSS and empirical N 
     ch_types : numpy array of length nchan
         Vector of 1's for magnetometers, 0's for gradiometers
     Lin, Lout : int
@@ -555,60 +557,76 @@ def apply_multi_sss(center1, center2, raw, do_fos, ch_types, Lin, Lout):
     raw_msss: MNE.RAW data structure
         raw data structure after mSSS preprocessing
     """
-    ## get chan positions
-    # these are in DEVICE COORDS
-    R=np.zeros([3,len(raw.info["chs"])])
-    EX=np.zeros([3,len(raw.info["chs"])])
-    EY=np.zeros([3,len(raw.info["chs"])])
-    EZ=np.zeros([3,len(raw.info["chs"])])
-    for i in range(0,len(raw.info["chs"])):
-        R[:,i] = np.transpose(raw.info["chs"][i]["loc"][:3])
-        EX[:,i] = np.transpose(raw.info["chs"][i]["loc"][3:6])
-        EY[:,i] = np.transpose(raw.info["chs"][i]["loc"][6:9])
-        EZ[:,i] = np.transpose(raw.info["chs"][i]["loc"][9:12])
-    
-    ## transform into HEAD COORDS
-    dev_head_t = raw.info["dev_head_t"]["trans"]
-    RT = np.matmul(dev_head_t,np.vstack([R, np.ones(np.shape(R)[1])]))[:-1]
-    EXT = np.matmul(dev_head_t,np.vstack([EX, np.ones(np.shape(EX)[1])]))[:-1]
-    EYT = np.matmul(dev_head_t,np.vstack([EY, np.ones(np.shape(EY)[1])]))[:-1]
-    EZT = np.matmul(dev_head_t,np.vstack([EZ, np.ones(np.shape(EZ)[1])]))[:-1]
+    if do_msss == False and do_fos==False:
+        print("Incompatible combination of Foster's Inverse with SSS, with mSSS, or mSSS alone. See prompt inscructions")
+        return
 
-    
-    # Calculate single VSH expansions from two optimized origins
-    _, SNin1 = Sin_vsh_vv(center1, RT, EXT, EYT, EZT, ch_types, Lin)
-    _, SNin2 = Sin_vsh_vv(center2, RT, EXT, EYT, EZT, ch_types, Lin)
-    
-    # Combine VSH expansions into one interior basis
-    combined = np.concatenate([SNin1, SNin2], axis=1)
-    U, sig_num, _ = np.linalg.svd(combined, full_matrices=True)
-    
-    # Keep vectors over a significance value > thresh
-    thresh = 0.005
-    ratio = sig_num / sig_num[0]
-    significant_indices = np.where(ratio >= thresh)[0]
-    SNin_tot = U[:, significant_indices]
-    
-    # Calculate exterior VSH basis at origin of system
-    _, SNout = Sout_vsh_vv(np.array([0, 0, 0]), R, EX, EY, EZ, ch_types, Lout)
-    
     ## create data strcutre, indicates in "info" that some preprocessing akin to SSS has happened
-    raw_msss = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=8, ext_order=3, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
+    raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=8, ext_order=3, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
     assert raw.info["bads"] == [] # double check bads were dropped
     meg_picks = mne.pick_types(raw.info, meg=True)
     phi_0 = raw.get_data(picks='meg')
-    #S=np.concatenate([SNin_tot,SNout],axis=1)
-    S=SNin_tot
-    if do_fos==True:
+    
+    if do_msss == True:
+        ## get chan positions
+        # these are in DEVICE COORDS
+        R=np.zeros([3,len(raw.info["chs"])])
+        EX=np.zeros([3,len(raw.info["chs"])])
+        EY=np.zeros([3,len(raw.info["chs"])])
+        EZ=np.zeros([3,len(raw.info["chs"])])
+        for i in range(0,len(raw.info["chs"])):
+            R[:,i] = np.transpose(raw.info["chs"][i]["loc"][:3])
+            EX[:,i] = np.transpose(raw.info["chs"][i]["loc"][3:6])
+            EY[:,i] = np.transpose(raw.info["chs"][i]["loc"][6:9])
+            EZ[:,i] = np.transpose(raw.info["chs"][i]["loc"][9:12])
+        
+        ## transform into HEAD COORDS
+        dev_head_t = raw.info["dev_head_t"]["trans"]
+        RT = np.matmul(dev_head_t,np.vstack([R, np.ones(np.shape(R)[1])]))[:-1]
+        EXT = np.matmul(dev_head_t,np.vstack([EX, np.ones(np.shape(EX)[1])]))[:-1]
+        EYT = np.matmul(dev_head_t,np.vstack([EY, np.ones(np.shape(EY)[1])]))[:-1]
+        EZT = np.matmul(dev_head_t,np.vstack([EZ, np.ones(np.shape(EZ)[1])]))[:-1]
+    
+        
+        # Calculate single VSH expansions from two optimized origins
+        _, SNin1 = Sin_vsh_vv(center1, RT, EXT, EYT, EZT, ch_types, Lin)
+        _, SNin2 = Sin_vsh_vv(center2, RT, EXT, EYT, EZT, ch_types, Lin)
+        
+        # Combine VSH expansions into one interior basis
+        combined = np.concatenate([SNin1, SNin2], axis=1)
+        U, sig_num, _ = np.linalg.svd(combined, full_matrices=True)
+        
+        # Keep vectors over a significance value > thresh
+        thresh = 0.005
+        ratio = sig_num / sig_num[0]
+        significant_indices = np.where(ratio >= thresh)[0]
+        SNin_tot = U[:, significant_indices]
+        
+        # Calculate exterior VSH basis at origin of system
+        _, SNout = Sout_vsh_vv(np.array([0, 0, 0]), R, EX, EY, EZ, ch_types, Lout)
+        #S=np.concatenate([SNin_tot,SNout],axis=1)
+        S=SNin_tot
+        if do_msss == True and do_fos==True:
+            ## foster's inverse with mSSS
+            N = mne.compute_raw_covariance(raw,rank="info",method='empirical')["data"]
+            data_fosters= _fosters_inverse(S, N, phi_0)
+            ## put new Foster's inverse with mSSS data "raw" structure
+            raw_preprocessed._data[meg_picks] = data_fosters
+        elif do_msss == True and do_fos==False: 
+            ## just mSSS
+            pS = np.linalg.pinv(S)
+            XN = pS @ phi_0
+            data_msss = np.real(S@XN)
+            ## put new mSSS data "raw" structure
+            raw_preprocessed._data[meg_picks] = data_msss
+   
+    elif do_msss==False and do_fos==True:
+        ## do Foster's Inverse with SSS
+        [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=8, ext_order=3, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)
         N = mne.compute_raw_covariance(raw,rank="info",method='empirical')["data"]
-        data_fosters= _fosters_inverse_msss(S, N, phi_0)
-        ## put new mSSS data "raw" structure
-        raw_msss._data[meg_picks] = data_fosters
-    else: 
-        pS = np.linalg.pinv(S)
-        XN = pS @ phi_0
-        data_msss = np.real(S@XN)
-        ## put new mSSS data "raw" structure
-        raw_msss._data[meg_picks] = data_msss
-    return raw_msss
+        data_fosters= _fosters_inverse(S[:, :n_use_in], N, phi_0)
+        ## put new Foster's with SSS data "raw" structure
+        raw_preprocessed._data[meg_picks] = data_fosters
+            
+    return raw_preprocessed
     

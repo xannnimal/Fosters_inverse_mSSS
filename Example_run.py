@@ -16,7 +16,7 @@ import mne
 
 ## import Foster's inverse with mSSS, and mSSS functions
 from fit_spheres_to_mri import fit_spheres_to_mri
-from run_fosters_mSSS import apply_multi_sss
+from run_fosters_mSSS import apply_preprocessing
 
 ########################################################################
 ## Example Run ####
@@ -91,12 +91,17 @@ if __name__ == '__main__':
                                      show_spheres=True)
 
         ###################################
-        # 6. Do mSSS alone (do_fos=False) or Foster's with mSSS (do_fos=True)
+        # 6. Run preprocessing
+        # do_fos=TRUE and do_msss=TRUE will execute Fosters Inverse with mSSS and empirical N 
+        # do_fos=FALSE and do_msss=TRUE will execute mSSS
+        # do_fos=TRUE and do_msss=FALSE will execute Fosters Inverse with SSS and empirical N 
+        ######################3
         do_fos=True
+        do_msss=True
         Lin=8
         Lout=3
         ch_types=np.ones(raw.info["nchan"]) # 1's for magnetometers, 0's for gradiometers
-        raw_msss = apply_multi_sss(np.transpose(centers[0]), 
+        raw_msss = apply_preprocessing(np.transpose(centers[0]), 
                                    np.transpose(centers[1]), 
                                    raw, 
                                    do_fos, 
