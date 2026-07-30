@@ -1,6 +1,6 @@
 # Fosters_inverse_mSSS
 
-These functions and Example implement the mSSS method as described in [Refined signal space separation methods for on-scalp MEG systems](https://pubmed.ncbi.nlm.nih.gov/40541227/) McPherson et al. 2025 from MATLAB into Python. See linked manuscript and this [Repository](https://github.com/xannnimal/refined_SSS_methods_onscalp_MEG) for original MATLAB implementation. 
+These functions and Example implement the mSSS method as described in [Refined signal space separation methods for on-scalp MEG systems](https://pubmed.ncbi.nlm.nih.gov/40541227/) McPherson et al. 2025 from MATLAB into Python. See linked manuscript and this [Repository](https://github.com/xannnimal/refined_SSS_methods_onscalp_MEG) for original mSSS MATLAB implementation. All other functions for calculating the vector spherical harmonic expansions are from [Presentation of electromagnetic multichannel data: The signal space separation method](https://pubs.aip.org/aip/jap/article-abstract/97/12/124905/893620/Presentation-of-electromagnetic-multichannel-data?redirectedFrom=fulltext) Taulu and Kajola, 2005.
 
 Next, these functions run the preprocessing method Foster's Inverse using either the SSS or the mSSS basis as derived and verified in [Noise Optimization of Basic Signal Component Extraction for Cryogenic and On-Scalp Magnetoencephalography (MEG)](https://www.biorxiv.org/content/10.64898/2026.07.21.739883v1) McPherson et al. July 2026. 
 
