@@ -6,6 +6,8 @@ Next, these functions run the preprocessing method Foster's Inverse using the mS
 
 Foster's Inverse with mSSS is a novel MEG preprocessing method modified specifically for on-scalp MEG, such as OPM-MEG, data preprocessing, where the internal brain activity is isolated using multiple overlapping and optimized vector spherical harmonic basis sets (mSSS) such that the whole brain is spanned without encroaching on the sensors, and estimated utilizing information about the sensor noise profile and artifacts (Foster's Inverse).
 
+User can choose to preprocesses their MEG data with Foster's Inverse with SSS, Foster's Inverse with mSSS, or mSSS. See instructions below in description of files!
+
 ## Description of Files
 1. `fit_spheres_to_mri.py` takes a BEM model and subject-specific MRI information to dynamically fit two spherical basis sets to span the brain, returns the origins of these two optimized expansions.
 
