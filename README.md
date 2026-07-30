@@ -2,7 +2,7 @@
 
 These functions and Example implement the mSSS method as described in [Refined signal space separation methods for on-scalp MEG systems](https://pubmed.ncbi.nlm.nih.gov/40541227/) McPherson et al. 2025 from MATLAB into Python. See linked manuscript and this [Repository](https://github.com/xannnimal/refined_SSS_methods_onscalp_MEG) for original MATLAB implementation. 
 
-Next, these functions run the preprocessing method Foster's Inverse using the mSSS basis as derived and verified in [Noise Optimization of Basic Signal Component Extraction for Cryogenic and On-Scalp Magnetoencephalography (MEG)](https://www.biorxiv.org/content/10.64898/2026.07.21.739883v1) McPherson et al. July 2026. 
+Next, these functions run the preprocessing method Foster's Inverse using either the SSS or the mSSS basis as derived and verified in [Noise Optimization of Basic Signal Component Extraction for Cryogenic and On-Scalp Magnetoencephalography (MEG)](https://www.biorxiv.org/content/10.64898/2026.07.21.739883v1) McPherson et al. July 2026. 
 
 Foster's Inverse with mSSS is a novel MEG preprocessing method modified specifically for on-scalp MEG, such as OPM-MEG, data preprocessing, where the internal brain activity is isolated using multiple overlapping and optimized vector spherical harmonic basis sets (mSSS) such that the whole brain is spanned without encroaching on the sensors, and estimated utilizing information about the sensor noise profile and artifacts (Foster's Inverse).
 
