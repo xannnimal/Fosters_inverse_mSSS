@@ -6,7 +6,7 @@ Created on Thu Jul 30 11:56:10 2026
 @author: Alexandria McPherson
 
 Python implementation of multi-SSS preprocessing as in https://pubmed.ncbi.nlm.nih.gov/40541227/
-Combined Python implementation with Fosters Inverse with mSSS as in https://www.biorxiv.org/content/10.64898/2026.07.21.739883v1
+Combined Python implementation with Fosters Inverse with SSS and with mSSS as in https://www.biorxiv.org/content/10.64898/2026.07.21.739883v1
 
 """
 
