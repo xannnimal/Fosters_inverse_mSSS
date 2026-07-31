@@ -17,7 +17,7 @@ User can choose to preprocesses their MEG data with Foster's Inverse with SSS, F
 - `do_fos=FALSE` and `do_msss=TRUE` will execute mSSS
 - `do_fos=FALSE` and `do_msss=FALSE` is not allowed and will raise an error
        
-This implementation of Foster's Inverse automatically used the Empirical method for estimating noise covariance included with MNE-Python. For more details, alternative implementations, and Foster's Inverse with SSS, see this [Repository](https://github.com/xannnimal/fosters_inverse_sss/tree/main)
+This implementation of Foster's Inverse automatically used the Empirical method for estimating noise covariance included with MNE-Python. For more details and alternative noise covariance methods, see this [Repository](https://github.com/xannnimal/fosters_inverse_sss/tree/main)
 
 3. `Example_run.py` shows how to implement the above to functions to preprocess MEG data
 
