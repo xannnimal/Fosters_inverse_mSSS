@@ -562,7 +562,7 @@ def apply_preprocessing(center1, center2, raw, do_fos, do_msss, ch_types, Lin, L
         return
 
     ## create data strcutre, indicates in "info" that some preprocessing akin to SSS has happened
-    raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=8, ext_order=3, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
+    raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
     assert raw.info["bads"] == [] # double check bads were dropped
     meg_picks = mne.pick_types(raw.info, meg=True)
     phi_0 = raw.get_data(picks='meg')
