@@ -570,22 +570,24 @@ def apply_preprocessing(center1, center2, raw, do_fos, do_msss, ch_types, Lin, L
     if do_msss == True:
         ## get chan positions
         # these are in DEVICE COORDS
-        R=np.zeros([3,len(raw.info["chs"])])
-        EX=np.zeros([3,len(raw.info["chs"])])
-        EY=np.zeros([3,len(raw.info["chs"])])
-        EZ=np.zeros([3,len(raw.info["chs"])])
-        for i in range(0,len(raw.info["chs"])):
-            R[:,i] = np.transpose(raw.info["chs"][i]["loc"][:3])
-            EX[:,i] = np.transpose(raw.info["chs"][i]["loc"][3:6])
-            EY[:,i] = np.transpose(raw.info["chs"][i]["loc"][6:9])
-            EZ[:,i] = np.transpose(raw.info["chs"][i]["loc"][9:12])
+        # before change Sep 19 2026: issue is if EOG channel added but with no sensor geometry.
+        # fixed by restricting mSSS calculation to actual MEG channels
+        R=np.zeros([3,len(meg_picks)])
+        EX=np.zeros([3,len(meg_picks)])
+        EY=np.zeros([3,len(meg_picks)])
+        EZ=np.zeros([3,len(meg_picks)])
+        for i, pick in enumerate(meg_picks):
+            R[:,i] = np.transpose(raw.info["chs"][pick]["loc"][:3])
+            EX[:,i] = np.transpose(raw.info["chs"][pick]["loc"][3:6])
+            EY[:,i] = np.transpose(raw.info["chs"][pick]["loc"][6:9])
+            EZ[:,i] = np.transpose(raw.info["chs"][pick]["loc"][9:12])
         
         ## transform into HEAD COORDS
         dev_head_t = raw.info["dev_head_t"]["trans"]
         RT = np.matmul(dev_head_t,np.vstack([R, np.ones(np.shape(R)[1])]))[:-1]
-        EXT = np.matmul(dev_head_t,np.vstack([EX, np.ones(np.shape(EX)[1])]))[:-1]
-        EYT = np.matmul(dev_head_t,np.vstack([EY, np.ones(np.shape(EY)[1])]))[:-1]
-        EZT = np.matmul(dev_head_t,np.vstack([EZ, np.ones(np.shape(EZ)[1])]))[:-1]
+        EXT = np.matmul(dev_head_t[:3, :3], EX)
+        EYT = np.matmul(dev_head_t[:3, :3], EY)
+        EZT = np.matmul(dev_head_t[:3, :3], EZ)
     
         
         # Calculate single VSH expansions from two optimized origins
