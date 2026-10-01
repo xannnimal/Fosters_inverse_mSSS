@@ -101,10 +101,14 @@ if __name__ == '__main__':
         Lin=8
         Lout=3
         ch_types=np.ones(raw.info["nchan"]) # 1's for magnetometers, 0's for gradiometers
+        first_trigger_sample = events[0, 0]
+        Ntmax = (first_trigger_sample - raw.first_samp) / raw.info['sfreq']
+        # "Ntmax = None" to use full recording for covar estimation
         raw_msss = apply_preprocessing(np.transpose(centers[0]), 
                                    np.transpose(centers[1]), 
                                    raw, 
                                    do_fos, 
+                                   Ntmax,
                                    ch_types, 
                                    Lin, Lout)
         
