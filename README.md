@@ -12,9 +12,9 @@ User can choose to preprocesses their MEG data with Foster's Inverse with SSS, F
 1. `fit_spheres_to_mri.py` takes a BEM model and subject-specific MRI information to dynamically fit two spherical basis sets to span the brain, returns the origins of these two optimized expansions.
 
 2. `run_fosters_msss.py` will run a different preprocessing depending on two user inputs:
-- `do_fos=TRUE` and `do_msss=TRUE` will execute Fosters Inverse with mSSS and empirical N
-- `do_fos=TRUE` and `do_msss=FALSE` will execute Fosters Inverse with SSS and empirical N
-- `do_fos=FALSE` and `do_msss=TRUE` will execute mSSS
+- `do_fos=TRUE` and `do_msss=TRUE` will execute Fosters Inverse with mSSS and empirical N. Two centers must be provided, calculated using `fit_spheres_to_mri.py`
+- `do_fos=TRUE` and `do_msss=FALSE` will execute Fosters Inverse with SSS and empirical N. Two centers both set to zero in device coordinates
+- `do_fos=FALSE` and `do_msss=TRUE` will execute mSSS. Two centers must be provided, calculated using `fit_spheres_to_mri.py`
 - `do_fos=FALSE` and `do_msss=FALSE` is not allowed and will raise an error
        
 This implementation of Foster's Inverse automatically used the Empirical method for estimating noise covariance included with MNE-Python. For more details and alternative noise covariance methods, see this [Repository](https://github.com/xannnimal/fosters_inverse_sss/tree/main)
