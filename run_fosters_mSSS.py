@@ -627,7 +627,7 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmax, do_msss, ch_types,
    
     elif do_msss==False and do_fos==True:
         ## do Foster's Inverse with SSS
-        [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)
+        [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='ignore', mag_scale=100.0, extended_proj=(), verbose=None)
         N = mne.compute_raw_covariance(raw,tmin=None,tmax=Ntmax,rank="info",method='empirical')["data"]
         data_fosters= _fosters_inverse(S[:, :n_use_in], N, phi_0)
         ## put new Foster's with SSS data "raw" structure
