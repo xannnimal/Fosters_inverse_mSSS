@@ -107,8 +107,10 @@ if __name__ == '__main__':
         raw_msss = apply_preprocessing(np.transpose(centers[0]), 
                                    np.transpose(centers[1]), 
                                    raw, 
-                                   do_fos, 
+                                   do_fos,
+                                   Ntmin=None,
                                    Ntmax,
+                                   do_msss
                                    ch_types, 
                                    Lin, Lout)
         
