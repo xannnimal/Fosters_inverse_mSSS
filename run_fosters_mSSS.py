@@ -527,7 +527,7 @@ def _fosters_inverse(S,N,phi_0):
     return data_fosters
 
 
-def apply_preprocessing(center1, center2, raw, do_fos, Ntmax, do_msss, ch_types, Lin, Lout):
+def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch_types, Lin, Lout):
     """
     Calculate two-origin mSSS basis
     Modified from Matlab Xan McPherson, 2024
@@ -543,8 +543,8 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmax, do_msss, ch_types,
     raw: MNE.RAW data structure
         ensure BADS are marked and dropped
     do_fos: bool
-    Ntmax: int
-        time end to use for noise covariance calculation
+    Ntmin, Ntmax: int
+        time start and end (in seconds) to use for noise covariance calculation
         leave as None if "do_fos=FALSE"
     do_msss: bool
         do_fos=TRUE and do_msss=TRUE will execute Fosters Inverse with mSSS and empirical N 
@@ -613,7 +613,7 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmax, do_msss, ch_types,
         S=SNin_tot
         if do_msss == True and do_fos==True:
             ## foster's inverse with mSSS
-            N = mne.compute_raw_covariance(raw,tmin=None,tmax=Ntmax,rank="info",method='empirical')["data"]
+            N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
             data_fosters= _fosters_inverse(S, N, phi_0)
             ## put new Foster's inverse with mSSS data "raw" structure
             raw_preprocessed._data[meg_picks] = data_fosters
@@ -628,7 +628,7 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmax, do_msss, ch_types,
     elif do_msss==False and do_fos==True:
         ## do Foster's Inverse with SSS
         [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='ignore', mag_scale=100.0, extended_proj=(), verbose=None)
-        N = mne.compute_raw_covariance(raw,tmin=None,tmax=Ntmax,rank="info",method='empirical')["data"]
+        N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
         data_fosters= _fosters_inverse(S[:, :n_use_in], N, phi_0)
         ## put new Foster's with SSS data "raw" structure
         raw_preprocessed._data[meg_picks] = data_fosters
