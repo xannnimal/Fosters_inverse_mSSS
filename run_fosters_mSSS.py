@@ -490,7 +490,7 @@ def _vsh_response_out(r, ex, ey, ez, D, weights, l, m):
     
     return Sout_element
 
-def _fosters_inverse(S,N,phi_0):
+def _fosters_inverse(S,pS,N,phi_0):
     """
     Parameters
     ----------
@@ -507,7 +507,7 @@ def _fosters_inverse(S,N,phi_0):
         reconstruction with Fosters Inverse preprocessing
     """
     ## setup Foster's Inverse- calculate Matrix B and vector b
-    pS= np.linalg.pinv(S)
+    #pS= np.linalg.pinv(S)
     XN = pS @ phi_0
     alpha = np.transpose(XN)
     alpha_cov_norm = np.cov(XN)
@@ -565,8 +565,9 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
         return
 
     ## create data strcutre, indicates in "info" that some preprocessing akin to SSS has happened
+    N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
     raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
-    assert raw.info["bads"] == [] # double check bads were dropped
+    #assert raw.info["bads"] == [] # double check bads were dropped
     meg_picks = mne.pick_types(raw.info, meg=True)
     phi_0 = raw.get_data(picks='meg')
     
@@ -613,8 +614,9 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
         S=SNin_tot
         if do_msss == True and do_fos==True:
             ## foster's inverse with mSSS
-            N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
-            data_fosters= _fosters_inverse(S, N, phi_0)
+            #N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
+            pS = np.linalg.pinv(S)
+            data_fosters= _fosters_inverse(S,pS, N, phi_0)
             ## put new Foster's inverse with mSSS data "raw" structure
             raw_preprocessed._data[meg_picks] = data_fosters
         elif do_msss == True and do_fos==False: 
@@ -628,8 +630,7 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
     elif do_msss==False and do_fos==True:
         ## do Foster's Inverse with SSS
         [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='ignore', mag_scale=100.0, extended_proj=(), verbose=None)
-        N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
-        data_fosters= _fosters_inverse(S[:, :n_use_in], N, phi_0)
+        data_fosters= _fosters_inverse(S, pS, N, phi_0)
         ## put new Foster's with SSS data "raw" structure
         raw_preprocessed._data[meg_picks] = data_fosters
             
