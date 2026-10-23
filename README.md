@@ -11,9 +11,14 @@ User can choose to preprocesses their MEG data with Foster's Inverse with SSS, F
 ## Description of Files
 1. `fit_spheres_to_mri.py` takes a BEM model and subject-specific MRI information to dynamically fit two spherical basis sets to span the brain, returns the origins of these two optimized expansions.
 
-2. `run_fosters_msss.py` will run a different preprocessing depending on two user inputs:
-- `raw_fos_sss = apply_preprocessing(raw, Nt=[Ntmin,Ntmax])` will run Fosters w/SSS using a user specific baseline period of data between [Ntmin,Ntmax] for the noise covariance. See `Example_run.py` for an example use case
-- `raw_fos_msss = apply_preprocessing(raw, Nt=[Ntmin,Ntmax],origin=centers)` will run Fosters w/mSSS using a user specific baseline period of data between [Ntmin,Ntmax] for the noise covariance, and takes in the two origins calculated by `fit_spheres_to_mri.py` exactly as returned as matrix `centers`. See `Example_run.py` for an example use case
+2. `run_fosters_msss.py` contains the function to run different SSS-based preprocessing methods depending on two user inputs, which helper functions
+
+## How to call the preprocessing function
+1. Foster's Inverse with SSS
+- `raw_fos_sss = apply_preprocessing(raw, Nt=[Ntmin,Ntmax])` with a user specific baseline period of data between [Ntmin,Ntmax] for the noise covariance. See `Example_run.py` for an example use case
+2. Foster's Inverse with mSSS
+- `raw_fos_msss = apply_preprocessing(raw, Nt=[Ntmin,Ntmax],origin=centers)` with a user specific baseline period of data between [Ntmin,Ntmax] for the noise covariance, and takes in the two origins calculated by `fit_spheres_to_mri.py` exactly as returned as matrix `centers`. See `Example_run.py` for an example use case
+3. mSSS 
 - `raw_msss = apply_preprocessing(raw, Nt=None,origin=centers)` will run mSSS using the two origins calculated by `fit_spheres_to_mri.py` exactly as returned as matrix `centers`. See `Example_run.py` for an example use case
        
 This implementation of Foster's Inverse automatically used the Empirical method for estimating noise covariance included with MNE-Python. For more details and alternative noise covariance methods, see this [Repository](https://github.com/xannnimal/fosters_inverse_sss/tree/main)
