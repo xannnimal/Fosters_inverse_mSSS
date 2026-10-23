@@ -11,7 +11,7 @@ User can choose to preprocesses their MEG data with Foster's Inverse with SSS, F
 ## Description of Files
 1. `fit_spheres_to_mri.py` takes a BEM model and subject-specific MRI information to dynamically fit two spherical basis sets to span the brain, returns the origins of these two optimized expansions.
 
-2. `run_fosters_msss.py` contains the function to run different SSS-based preprocessing methods depending on two user inputs, which helper functions
+2. `run_fosters_msss.py` contains the function to run different SSS-based preprocessing methods depending on two user inputs, with other helper functions
 
 ## How to call the preprocessing function
 1. Foster's Inverse with SSS
