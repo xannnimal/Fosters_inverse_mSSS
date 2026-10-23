@@ -527,7 +527,7 @@ def _fosters_inverse(S,pS,N,phi_0):
     return data_fosters
 
 
-def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch_types, Lin, Lout):
+def apply_preprocessing(raw, Nt, origin=np.zeros(3)):
     """
     Calculate two-origin mSSS basis
     Modified from Matlab Xan McPherson, 2024
@@ -537,41 +537,37 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
     
     Parameters:
     -----------
-    center1, center2 : numpy array of shape (3,)
+    origin : numpy array of shape (3,) or (3,2)
         (x,y,z) locations of expansion centers
-        returned by function FIT_SPHERES_TO_MRI
+        Default is (0,0,0) in DEVICE coords, used for Fosters w/SSS
+        for mSSS, returned by function FIT_SPHERES_TO_MRI
     raw: MNE.RAW data structure
-        ensure BADS are marked and dropped
+        ensure BADS are marked and dropped, or interpolated
     do_fos: bool
-    Ntmin, Ntmax: int
-        time start and end (in seconds) to use for noise covariance calculation
-        leave as None if "do_fos=FALSE"
-    do_msss: bool
-        do_fos=TRUE and do_msss=TRUE will execute Fosters Inverse with mSSS and empirical N 
-        do_fos=FALSE and do_msss=TRUE will execute mSSS
-        do_fos=TRUE and do_msss=FALSE will execute Fosters Inverse with SSS and empirical N 
-    ch_types : numpy array of length nchan
-        Vector of 1's for magnetometers, 0's for gradiometers
-    Lin, Lout : int
-        VSH truncation order, typically (8, 3)
+    Nt: int, numpy array of shape (2,)
+        Nt[0]= time start (in seconds) to use for noise covariance calculation
+        Nt[1]= time end (in seconds) to use for noise covariance calculation
+        Nt=None for mSSS without Fosters inverse
     
     Returns:
     --------
     raw_msss: MNE.RAW data structure
         raw data structure after mSSS preprocessing
     """
-    if do_msss == False and do_fos==False:
-        print("Incompatible combination of Foster's Inverse with SSS, with mSSS, or mSSS alone. See prompt inscructions")
-        return
-
-    ## create data strcutre, indicates in "info" that some preprocessing akin to SSS has happened
-    N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
-    raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
-    #assert raw.info["bads"] == [] # double check bads were dropped
+    
+    ### initialize parameters
+    Lin=8
+    Lout=3
     meg_picks = mne.pick_types(raw.info, meg=True)
+    ch_types = np.array([1 if mne.channel_type(raw.info, idx) == 'mag' else 0 for idx in meg_picks])
+    
+    ## create data strcutre, indicates in "info" that some preprocessing akin to SSS has happened
+    # TODO: modify this step to be more time-efficient
+    raw_preprocessed = mne.preprocessing.maxwell_filter(raw, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize='in', ignore_ref=True, bad_condition='error', mag_scale=100.0, extended_proj=(), verbose=None)  # just to get the info to indicate some Maxwell filtering was done etc.
     phi_0 = raw.get_data(picks='meg')
     
-    if do_msss == True:
+    if np.size(origin)==6:
+        print("caltulating mSSS basis for preprocessing...")
         ## get chan positions
         # these are in DEVICE COORDS
         # before change Sep 19 2026: issue is if EOG channel added but with no sensor geometry.
@@ -595,8 +591,8 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
     
         
         # Calculate single VSH expansions from two optimized origins
-        _, SNin1 = Sin_vsh_vv(center1, RT, EXT, EYT, EZT, ch_types, Lin)
-        _, SNin2 = Sin_vsh_vv(center2, RT, EXT, EYT, EZT, ch_types, Lin)
+        _, SNin1 = Sin_vsh_vv(np.transpose(origin[0]), RT, EXT, EYT, EZT, ch_types, Lin)
+        _, SNin2 = Sin_vsh_vv(np.transpose(origin[1]), RT, EXT, EYT, EZT, ch_types, Lin)
         
         # Combine VSH expansions into one interior basis
         combined = np.concatenate([SNin1, SNin2], axis=1)
@@ -610,29 +606,37 @@ def apply_preprocessing(center1, center2, raw, do_fos, Ntmin, Ntmax, do_msss, ch
         
         # Calculate exterior VSH basis at origin of system
         _, SNout = Sout_vsh_vv(np.array([0, 0, 0]), R, EX, EY, EZ, ch_types, Lout)
-        #S=np.concatenate([SNin_tot,SNout],axis=1)
-        S=SNin_tot
-        if do_msss == True and do_fos==True:
+        
+        if Nt!=None:
             ## foster's inverse with mSSS
-            #N = mne.compute_raw_covariance(raw,tmin=Ntmin,tmax=Ntmax,rank="info",method='empirical')["data"]
-            pS = np.linalg.pinv(S)
-            data_fosters= _fosters_inverse(S,pS, N, phi_0)
-            ## put new Foster's inverse with mSSS data "raw" structure
+            assert np.size(Nt)==2
+            print("Preprocessing data with Foster's inverse with mSSS... ")
+            pS = np.linalg.pinv(SNin_tot)
+            N = mne.compute_raw_covariance(raw,tmin=Nt[0],tmax=Nt[1],rank="info",method='empirical')["data"]
+            data_fosters= _fosters_inverse(SNin_tot, pS, N, phi_0)
             raw_preprocessed._data[meg_picks] = data_fosters
-        elif do_msss == True and do_fos==False: 
+        elif Nt==None: 
             ## just mSSS
+            print("Preprocessing data with mSSS... ")
+            S=np.concatenate([SNin_tot,SNout],axis=1)
             pS = np.linalg.pinv(S)
             XN = pS @ phi_0
-            data_msss = np.real(S@XN)
+            data_msss = np.real(SNin_tot@XN[:np.shape(SNin_tot)[1],:])
             ## put new mSSS data "raw" structure
             raw_preprocessed._data[meg_picks] = data_msss
+        else:
+            print("incompatible parameters, please check your input values for Nt")
    
-    elif do_msss==False and do_fos==True:
+    elif np.size(origin)==3:
         ## do Foster's Inverse with SSS
+        print("Preprocessing data with Foster's inverse with SSS... ")
         [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='ignore', mag_scale=100.0, extended_proj=(), verbose=None)
+        N = mne.compute_raw_covariance(raw,tmin=Nt[0],tmax=Nt[1],rank="info",method='empirical')["data"]
         data_fosters= _fosters_inverse(S, pS, N, phi_0)
         ## put new Foster's with SSS data "raw" structure
         raw_preprocessed._data[meg_picks] = data_fosters
+    else:
+        print("incompatible parameters, please check your input values for Origin and Nt")
             
     return raw_preprocessed
     
