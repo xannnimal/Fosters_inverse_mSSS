@@ -67,11 +67,12 @@ if __name__ == '__main__':
 
         ###################################
         # 4. Prepare data for preprocessing
-        ## drop bad channels -- to make sure dimensions of data match info later on
+        ## drop or interpolate bad channels
         bad_indices = [raw.ch_names.index(ch) for ch in raw.info['bads']]
         bads = raw.info["bads"]
         raw.drop_channels(bads)
-        raw.drop_channels(['di2'])
+        ## for interpolation
+        # raw.interpolate_bads(origin=[0,0,0],reset_bads=True)
     
         ## high and low - pass, notch filter raw data
         raw.load_data().filter(l_freq=freq_min, h_freq=freq_max)
@@ -91,34 +92,23 @@ if __name__ == '__main__':
                                      show_spheres=True)
 
         ###################################
-        # 6. Run preprocessing
-        # do_fos=TRUE and do_msss=TRUE will execute Fosters Inverse with mSSS and empirical N 
-        # do_fos=FALSE and do_msss=TRUE will execute mSSS
-        # do_fos=TRUE and do_msss=FALSE will execute Fosters Inverse with SSS and empirical N 
-        ######################3
-        do_fos=True
-        do_msss=True
-        Lin=8
-        Lout=3
-        ch_types=np.ones(raw.info["nchan"]) # 1's for magnetometers, 0's for gradiometers
+        # 7. Specifcy time period to use for N calculation in Fosters
+        ########################
         first_trigger_sample = events[0, 0]
         Ntmax = (first_trigger_sample - raw.first_samp) / raw.info['sfreq']
-        # "Ntmax = None" to use full recording for covar estimation
-        raw_msss = apply_preprocessing(np.transpose(centers[0]), 
-                                   np.transpose(centers[1]), 
-                                   raw, 
-                                   do_fos,
-                                   Ntmin=None,
-                                   Ntmax,
-                                   do_msss
-                                   ch_types, 
-                                   Lin, Lout)
         
         ###################################
-        # 7. make epochs, visualize evokeds
-        epochs_msss = mne.Epochs(raw_msss, events, tmin=tmin, tmax=tmax, baseline=None, preload=True)
-        evoked_msss = epochs_msss.average()
-        fig = evoked_msss.plot_joint(ts_args=ts_args, topomap_args=topomap_args, title=subject+"Foster's with mSSS")
+        # 8. Run preprocessing
+        ########################
+        raw_fos_sss = apply_preprocessing(raw, Nt=[None,Ntmax])
+        raw_fos_msss = apply_preprocessing(raw, Nt=[None,Ntmax], origin=centers)
+        raw_msss = apply_preprocessing(raw, Nt=None, origin=centers)
+        
+        ###################################
+        # 9. make epochs, visualize evokeds
+        epochs_fos_msss = mne.Epochs(raw_fos_msss, events, tmin=tmin, tmax=tmax, baseline=None, preload=True)
+        evoked_fos_msss = epochs_fos_msss.average()
+        fig = evoked_fos_msss.plot_joint(ts_args=ts_args, topomap_args=topomap_args, title=subject+"Foster's with mSSS")
 
 
 
