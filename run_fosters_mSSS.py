@@ -7,6 +7,8 @@ Created on Wed Jul 29 15:17:10 2026
 
 Rewriting all the MATLAB functions involved in mSSS into Python
 Original MATLAB functions written  by Samu Taulu and Alexandria McPherson
+
+changes for user clarity Oct 2026
 """
 
 import numpy as np
@@ -632,7 +634,7 @@ def apply_preprocessing(raw, Nt, origin=np.zeros(3)):
         print("Preprocessing data with Foster's inverse with SSS... ")
         [S, pS, reg_moments, n_use_in]=mne.preprocessing.compute_maxwell_basis(raw.info, origin=(0.,0.,0.), int_order=Lin, ext_order=Lout, calibration=None, coord_frame='meg', regularize=None, ignore_ref=True, bad_condition='ignore', mag_scale=100.0, extended_proj=(), verbose=None)
         N = mne.compute_raw_covariance(raw,tmin=Nt[0],tmax=Nt[1],rank="info",method='empirical')["data"]
-        data_fosters= _fosters_inverse(S, pS, N, phi_0)
+        data_fosters= _fosters_inverse(S[:, :n_use_in], pS[:n_use_in], N, phi_0)
         ## put new Foster's with SSS data "raw" structure
         raw_preprocessed._data[meg_picks] = data_fosters
     else:
